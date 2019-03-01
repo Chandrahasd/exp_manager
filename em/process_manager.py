@@ -13,7 +13,7 @@ class ProcessManager:
     It takes the python executable, the main executable and the arguments and runs them
     based on gpu-availability.
     """
-    def __init__(self, python_exe, main_exe, result_dir=None):
+    def __init__(self, python_exe, main_exe, result_dir=None, max_processes=8):
         """Creates an instance of ProcessManager.
         Arguments:
         python_exe: the python executable
@@ -27,7 +27,7 @@ class ProcessManager:
         self.logfiles = {}
         self.thread = threading.Thread(target=self.run)
         self.terminate = False
-        self.sleep_time = 6
+        self.sleep_time = 60
         self.gpu_utils = GPUUtils(tuple(range(8)))
         self.gpu_memory = 1000
         self.gpu_empty = False
@@ -36,6 +36,7 @@ class ProcessManager:
         self.ignore_list = []
         self.pid_process_map = {}
         self.tail_lines = 10
+        self.max_processes = max_processes
         if result_dir is not None:
             self.result_dir = result_dir
         else:
@@ -143,6 +144,11 @@ class ProcessManager:
 
             # wait if the cpu or memory usage is above threshold
             if get_cpu_memory() < self.cpu_memory_thr or get_cpu_usage() > self.cpu_usage_thr:
+                time.sleep(self.sleep_time)
+                continue
+
+            # wait if current number of running processes are above threshold
+            if self.running.qsize() >= self.max_processes:
                 time.sleep(self.sleep_time)
                 continue
 
