@@ -6,7 +6,7 @@ import subprocess
 import gpustat
 import threading
 
-from gpu_utils import GPUUtils, get_cpu_usage, get_cpu_memory
+from em.gpu_utils import GPUUtils, get_cpu_usage, get_cpu_memory
 
 class ProcessManager:
     """A Class for running multiple instances of same process with different arguments.
