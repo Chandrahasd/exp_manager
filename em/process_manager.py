@@ -13,7 +13,7 @@ class ProcessManager:
     It takes the python executable, the main executable and the arguments and runs them
     based on gpu-availability.
     """
-    def __init__(self, python_exe, main_exe, result_dir=None, max_processes=8):
+    def __init__(self, python_exe, main_exe, **kwargs):
         """Creates an instance of ProcessManager.
         Arguments:
         python_exe: the python executable
@@ -27,16 +27,17 @@ class ProcessManager:
         self.logfiles = {}
         self.thread = threading.Thread(target=self.run)
         self.terminate = False
-        self.sleep_time = 60
-        self.gpu_utils = GPUUtils(tuple(range(8)))
-        self.gpu_memory = 1000
-        self.gpu_empty = False
-        self.cpu_usage_thr = 95.0
-        self.cpu_memory_thr = 50 #GB
         self.ignore_list = []
         self.pid_process_map = {}
-        self.tail_lines = 10
-        self.max_processes = max_processes
+        self.sleep_time = kwargs.get('sleep_time', 60)
+        self.gpu_utils = GPUUtils(kwargs.get('gpus', tuple(range(4))))
+        self.gpu_memory = kwargs.get('gpu_memory', 1000)
+        self.gpu_empty = kwargs.get('gpu_empty', False)
+        self.cpu_usage_thr = kwargs.get('cpu_usage_thr', 95.0) #percent of memory used
+        self.cpu_memory_thr = kwargs.get('cpu_memory_thr', 50) #GB
+        self.tail_lines = kwargs.get('tail_lines', 10)
+        self.max_processes = kwargs.get('max_processes', 8)
+        result_dir = kwargs.get('result_dir')
         if result_dir is not None:
             self.result_dir = result_dir
         else:
@@ -92,6 +93,19 @@ class ProcessManager:
         self.pid_process_map[process.pid] = process
         return process
 
+    def _update_status(self):
+        running_updated = queue.Queue()
+        for process in self.running.queue:
+            if process.poll() is None:
+                running_updated.put(process)
+            else:
+                self.completed.put(process)
+                try:
+                    self.logfiles[process.pid].close()
+                except:
+                    continue
+        self.running = running_updated
+
     def start(self):
         """starts executing the subprocesses in background
         """
@@ -128,7 +142,7 @@ class ProcessManager:
         """
         self.pqueue.put(args)
 
-    def run(self):
+    def run(self, break_on_empty=False):
         """runs the queued args as background processes.
         This method runs in background and can pickup jobs queued later.
         """
@@ -139,6 +153,8 @@ class ProcessManager:
 
             # wait for processes if the queue is empty
             if self.pqueue.empty():
+                if break_on_empty:
+                    break
                 time.sleep(self.sleep_time)
                 continue
 
@@ -148,6 +164,7 @@ class ProcessManager:
                 continue
 
             # wait if current number of running processes are above threshold
+            self._update_status()
             if self.running.qsize() >= self.max_processes:
                 time.sleep(self.sleep_time)
                 continue
@@ -183,7 +200,7 @@ class ProcessManager:
                 'num_running': self.running.qsize(),
                 'num_completed': self.completed.qsize(),
                 'total': total,
-                'queued': [x.pid for x in self.pqueue.queue],
+                'queued': [x for x in self.pqueue.queue],
                 'running': [x.pid for x in self.running.queue],
                 'completed': [x.pid for x in self.completed.queue],
                 'status': run_status,
