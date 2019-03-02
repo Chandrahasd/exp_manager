@@ -84,10 +84,11 @@ class ProcessManager:
         outfile = self._get_log_file(args)
         for key, val in args.items():
             cmd.append("--{key}".format(key=key))
-            if val:
+            if val is not None:
                 cmd.append("{val}".format(val=val))
         logfile = open(outfile, 'w')
-        print("OUTFILE : {outfile}".format(outfile=outfile))
+        print("OUTFILE: {outfile}".format(outfile=outfile))
+        print("COMMAND: {cmd}".format(cmd=cmd))
         process = subprocess.Popen(cmd, stdout=logfile)
         self.logfiles[process.pid] = logfile
         self.pid_process_map[process.pid] = process
