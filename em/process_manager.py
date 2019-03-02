@@ -66,7 +66,7 @@ class ProcessManager:
         logfile = self.logfiles.get(pid)
         if logfile is None:
             return ""
-        cmd = ['tail', '-n', '{tail_lines}'.format(tail_lines=self.tail_lines), logfile]
+        cmd = ['tail', '-n', '{tail_lines}'.format(tail_lines=self.tail_lines), logfile.name]
         tail_process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         tail_process.wait()
         lines = []
