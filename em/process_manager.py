@@ -34,7 +34,7 @@ class ProcessManager:
         self.gpu_memory = kwargs.get('gpu_memory', 1000)
         self.gpu_empty = kwargs.get('gpu_empty', False)
         self.cpu_usage_thr = kwargs.get('cpu_usage_thr', 95.0) #percent of memory used
-        self.cpu_memory_thr = kwargs.get('cpu_memory_thr', 50) #GB
+        self.cpu_memory_thr = kwargs.get('cpu_memory_thr', 5) #GB
         self.tail_lines = kwargs.get('tail_lines', 10)
         self.max_processes = kwargs.get('max_processes', 8)
         result_dir = kwargs.get('result_dir')
@@ -85,7 +85,11 @@ class ProcessManager:
         for key, val in args.items():
             cmd.append("--{key}".format(key=key))
             if val is not None:
-                cmd.append("{val}".format(val=val))
+                if isinstance(val, tuple) or isinstance(val, list):
+                    for v in val:
+                        cmd.append("{v}".format(v=v))
+                else:
+                    cmd.append("{val}".format(val=val))
         logfile = open(outfile, 'w')
         print("OUTFILE: {outfile}".format(outfile=outfile))
         print("COMMAND: {cmd}".format(cmd=cmd))
@@ -156,17 +160,20 @@ class ProcessManager:
             if self.pqueue.empty():
                 if break_on_empty:
                     break
+                print("empty queue")
                 time.sleep(self.sleep_time)
                 continue
 
             # wait if the cpu or memory usage is above threshold
             if get_cpu_memory() < self.cpu_memory_thr or get_cpu_usage() > self.cpu_usage_thr:
+                print("cpu/memory full")
                 time.sleep(self.sleep_time)
                 continue
 
             # wait if current number of running processes are above threshold
             self._update_status()
             if self.running.qsize() >= self.max_processes:
+                print("maximum number of processes running")
                 time.sleep(self.sleep_time)
                 continue
 
