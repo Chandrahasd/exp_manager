@@ -53,7 +53,7 @@ class ProcessManager:
             # ignore directory parameters
             if '/' in key \
                     or (isinstance(val, str) and '/' in val) \
-                    or key in ['_result_subdir']
+                    or key in ['_result_subdir'] \
                     or key in self.ignore_list:
                 continue
             name.append("{key}={val}".format(key=key, val=val))
