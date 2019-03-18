@@ -93,7 +93,7 @@ class ProcessManager:
         logfile = open(outfile, 'w')
         print("OUTFILE: {outfile}".format(outfile=outfile))
         print("COMMAND: {cmd}".format(cmd=cmd))
-        process = subprocess.Popen(cmd, stdout=logfile)
+        process = subprocess.Popen(cmd, stdout=logfile, stderr=logfile)
         self.logfiles[process.pid] = logfile
         self.pid_process_map[process.pid] = process
         return process
