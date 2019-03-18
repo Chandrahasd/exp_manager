@@ -53,6 +53,7 @@ class ProcessManager:
             # ignore directory parameters
             if '/' in key \
                     or (isinstance(val, str) and '/' in val) \
+                    or key in ['_result_subdir']
                     or key in self.ignore_list:
                 continue
             name.append("{key}={val}".format(key=key, val=val))
@@ -60,7 +61,7 @@ class ProcessManager:
         return name
 
     def _get_log_file(self, args):
-        return os.path.join(self.result_dir, self._get_file_from_args(args))
+        return os.path.join(self.result_dir, args.get('_result_subdir', os.curdir), self._get_file_from_args(args))
 
     def _get_process_log(self, pid):
         logfile = self.logfiles.get(pid)
@@ -83,6 +84,8 @@ class ProcessManager:
         cmd = [self.python_exe, self.main_exe]
         outfile = self._get_log_file(args)
         for key, val in args.items():
+            if key.startswith('_'):
+                continue
             cmd.append("--{key}".format(key=key))
             if val is not None:
                 if isinstance(val, tuple) or isinstance(val, list):
