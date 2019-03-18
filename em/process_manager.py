@@ -67,11 +67,13 @@ class ProcessManager:
 
     def _get_log_file(self, args):
         if self.run_mode.lower() in ['distributed']:
-            return os.path.join(self.result_dir, \
-                                self._get_file_from_args(args, ignore_this=['node_type', 'node_index']), \
+            subdir = os.path.join(self.result_dir, \
+                                  self._get_file_from_args(args, ignore_this=['node_type', 'node_index']))
+            os.makedirs(subdir, exist_ok=True)
+            return os.path.join(subdir, \
                                 "{typ}.{index}.txt".format(typ=args['node_type'], index=args['node_index']))
         else:
-            return os.path.join(self.result_dir, args.get('_result_subdir', os.curdir), self._get_file_from_args(args))
+            return os.path.join(self.result_dir, self._get_file_from_args(args))
 
     def _get_process_log(self, pid):
         logfile = self.logfiles.get(pid)
