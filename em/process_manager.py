@@ -61,6 +61,8 @@ class ProcessManager:
             name.append("{key}={val}".format(key=key, val=val))
         if len(ignore_this) == 0:
             name = "%s.out" % ("_".join(name))
+        else:
+            name = "_".join(name)
         return name
 
     def _get_log_file(self, args):
