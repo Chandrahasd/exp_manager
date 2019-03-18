@@ -27,7 +27,7 @@ class ProcessManager:
         self.logfiles = {}
         self.thread = threading.Thread(target=self.run)
         self.terminate = False
-        self.ignore_list = []
+        self.ignore_list = kwargs.get('ignore_list', [])
         self.pid_process_map = {}
         self.sleep_time = kwargs.get('sleep_time', 60)
         self.gpu_utils = GPUUtils(kwargs.get('gpus', tuple(range(4))))
