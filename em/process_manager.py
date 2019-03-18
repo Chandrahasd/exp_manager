@@ -37,6 +37,7 @@ class ProcessManager:
         self.cpu_memory_thr = kwargs.get('cpu_memory_thr', 5) #GB
         self.tail_lines = kwargs.get('tail_lines', 10)
         self.max_processes = kwargs.get('max_processes', 8)
+        self.run_mode = kwargs.get('run_mode', 'gs') #gridsearch or distributed
         result_dir = kwargs.get('result_dir')
         if result_dir is not None:
             self.result_dir = result_dir
@@ -45,7 +46,7 @@ class ProcessManager:
             if not os.path.exists(self.result_dir):
                 os.mkdir(self.result_dir)
 
-    def _get_file_from_args(self, args):
+    def _get_file_from_args(self, args, ignore_this=[]):
         """Creates a log-file name from arguments
         """
         name = []
@@ -54,14 +55,21 @@ class ProcessManager:
             if '/' in key \
                     or (isinstance(val, str) and '/' in val) \
                     or key in ['_result_subdir'] \
+                    or key in ignore_this \
                     or key in self.ignore_list:
                 continue
             name.append("{key}={val}".format(key=key, val=val))
-        name = "%s.out" % ("_".join(name))
+        if len(ignore_this) == 0:
+            name = "%s.out" % ("_".join(name))
         return name
 
     def _get_log_file(self, args):
-        return os.path.join(self.result_dir, args.get('_result_subdir', os.curdir), self._get_file_from_args(args))
+        if self.run_mode.lower() in ['distributed']:
+            return os.path.join(self.result_dir, \
+                                self._get_file_from_args(args, ignore_this=['node_type', 'node_index']), \
+                                "{typ}.{index}.txt".format(typ=args['node_type'], index=args['node_index']))
+        else:
+            return os.path.join(self.result_dir, args.get('_result_subdir', os.curdir), self._get_file_from_args(args))
 
     def _get_process_log(self, pid):
         logfile = self.logfiles.get(pid)
