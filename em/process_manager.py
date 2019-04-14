@@ -7,6 +7,7 @@ import gpustat
 import threading
 
 from em.gpu_utils import GPUUtils, get_cpu_usage, get_cpu_memory
+import utils
 
 class ProcessManager:
     """A Class for running multiple instances of same process with different arguments.
@@ -38,6 +39,7 @@ class ProcessManager:
         self.tail_lines = kwargs.get('tail_lines', 10)
         self.max_processes = kwargs.get('max_processes', 8)
         self.run_mode = kwargs.get('run_mode', 'gs') #gridsearch or distributed
+        self.logger = kwargs.get('logfile', 'gridsearch.log')
         result_dir = kwargs.get('result_dir')
         if result_dir is not None:
             self.result_dir = result_dir
@@ -109,6 +111,7 @@ class ProcessManager:
         print("OUTFILE: {outfile}".format(outfile=outfile))
         print("COMMAND: {cmd}".format(cmd=cmd))
         process = subprocess.Popen(cmd, stdout=logfile, stderr=logfile)
+        print("PID: {pid}".format(pid=process.pid))
         self.logfiles[process.pid] = logfile
         self.pid_process_map[process.pid] = process
         return process
@@ -129,6 +132,8 @@ class ProcessManager:
     def start(self):
         """starts executing the subprocesses in background
         """
+        self.logger = open(self.logger, 'a')
+        sys.stdout = utils.MultiOut(self.logger, sys.stdout)
         self.thread.start()
 
     def stop(self, force=False):
@@ -156,6 +161,7 @@ class ProcessManager:
             except Exception as e:
                 print(e)
                 continue
+        self.logger.close()
 
     def enqueue(self, args):
         """adds the given args to be run as new subprocess
